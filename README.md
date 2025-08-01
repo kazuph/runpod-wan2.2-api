@@ -14,7 +14,7 @@ https://arxiv.org/abs/2503.20314
 ### 🌐 Page
 https://wan.video/
 
-### 📦 Model (LoRA)
+### 📦 Model
 https://huggingface.co/Phr00t/WAN2.2-14B-Rapid-AllInOne
 
 ### 🖼 Output
