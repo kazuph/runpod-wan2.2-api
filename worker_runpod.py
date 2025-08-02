@@ -95,54 +95,19 @@ def generate(input):
         out_samples = KSampler.sample(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, out_latent)[0]
 
         decoded_images = VAEDecode.decode(vae, out_samples)[0].detach()
-        images_to_mp4(decoded_images, f"/content/wan2.2-i2v-rapid-{seed}-tost.mp4", fps)
         
-        result = f"/content/wan2.2-i2v-rapid-{seed}-tost.mp4"
-
-        notify_uri = values['notify_uri']
-        del values['notify_uri']
-        notify_token = values['notify_token']
-        del values['notify_token']
-        discord_id = values['discord_id']
-        del values['discord_id']
-        if(discord_id == "discord_id"):
-            discord_id = os.getenv('com_camenduru_discord_id')
-        discord_channel = values['discord_channel']
-        del values['discord_channel']
-        if(discord_channel == "discord_channel"):
-            discord_channel = os.getenv('com_camenduru_discord_channel')
-        discord_token = values['discord_token']
-        del values['discord_token']
-        if(discord_token == "discord_token"):
-            discord_token = os.getenv('com_camenduru_discord_token')
-        job_id = values['job_id']
-        del values['job_id']
-        with open(result, 'rb') as file:
-            response = requests.post("https://upload.tost.ai/api/v1", files={'file': file})
-        response.raise_for_status()
-        result_url = response.text
-        notify_payload = {"jobId": job_id, "result": result_url, "status": "DONE"}
-        web_notify_uri = os.getenv('com_camenduru_web_notify_uri')
-        web_notify_token = os.getenv('com_camenduru_web_notify_token')
-        if(notify_uri == "notify_uri"):
-            requests.post(web_notify_uri, data=json.dumps(notify_payload), headers={'Content-Type': 'application/json', "Authorization": web_notify_token})
-        else:
-            requests.post(web_notify_uri, data=json.dumps(notify_payload), headers={'Content-Type': 'application/json', "Authorization": web_notify_token})
-            requests.post(notify_uri, data=json.dumps(notify_payload), headers={'Content-Type': 'application/json', "Authorization": notify_token})
-        return {"jobId": job_id, "result": result_url, "status": "DONE"}
+        # Create output directory and save video locally
+        os.makedirs("/content/ComfyUI/output", exist_ok=True)
+        result = f"/content/ComfyUI/output/wan2.2-i2v-rapid-{seed}-local.mp4"
+        images_to_mp4(decoded_images, result, fps)
+        
+        job_id = values.get('job_id', f'local-job-{seed}')
+        
+        # Return local file path instead of upload URL
+        return {"jobId": job_id, "result": result, "status": "DONE", "message": "Video saved locally"}
     except Exception as e:
-        error_payload = {"jobId": job_id, "status": "FAILED"}
-        try:
-            if(notify_uri == "notify_uri"):
-                requests.post(web_notify_uri, data=json.dumps(error_payload), headers={'Content-Type': 'application/json', "Authorization": web_notify_token})
-            else:
-                requests.post(web_notify_uri, data=json.dumps(error_payload), headers={'Content-Type': 'application/json', "Authorization": web_notify_token})
-                requests.post(notify_uri, data=json.dumps(error_payload), headers={'Content-Type': 'application/json', "Authorization": notify_token})
-        except:
-            pass
+        job_id = values.get('job_id', 'unknown-job') if 'values' in locals() else 'unknown-job'
+        print(f"Error in generate: {str(e)}")
         return {"jobId": job_id, "result": f"FAILED: {str(e)}", "status": "FAILED"}
-    finally:
-        if os.path.exists(result):
-            os.remove(result)
 
 runpod.serverless.start({"handler": generate})
