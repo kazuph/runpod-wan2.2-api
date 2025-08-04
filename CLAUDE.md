@@ -153,6 +153,30 @@ LENGTH=72
 SEED=101
 ```
 
+### Sample Configurations
+
+**Static Portrait (3 seconds):**
+```bash
+export INPUT_IMAGE="input_001_white.png"
+export POSITIVE_PROMPT="Close-up portrait with serene expression, closed lips, direct eye contact with camera, natural lighting, minimal movement, static pose, calm demeanor"
+export NEGATIVE_PROMPT="mouth opening, lip movement, talking, speaking, facial animation, lip sync, dialogue, conversation"
+export WIDTH=720
+export HEIGHT=720
+export LENGTH=72
+docker compose run --rm wan2-i2v python generate_video.py
+```
+
+**Fireworks Celebration (5 seconds):**
+```bash
+export INPUT_IMAGE="image_005_black.png"
+export POSITIVE_PROMPT="Beautiful fireworks exploding in night sky above children, colorful fireworks bursting and sparkling, magical firework display, bright colorful explosions"
+export NEGATIVE_PROMPT="mouth opening, talking, speaking, facial animation, daytime, bright lighting, no fireworks, static sky"
+export WIDTH=576
+export HEIGHT=576
+export LENGTH=120
+docker compose run --rm wan2-i2v python generate_video.py
+```
+
 ## Common Issues & Solutions
 
 ### 1. CUDA Out of Memory
