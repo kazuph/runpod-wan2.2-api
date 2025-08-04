@@ -1,0 +1,20 @@
+{
+  "input": {
+    "input_image": "input_001_white.png",
+    "positive_prompt": "Close-up portrait with serene expression, closed lips, direct eye contact with camera, natural lighting, minimal movement, static pose, calm demeanor, peaceful countenance, steady gaze",
+    "negative_prompt": "mouth opening, lip movement, talking, speaking, facial animation, lip sync, dialogue, conversation, mouth motion, jaw movement, teeth showing, tongue visible",
+    "crop": "center",
+    "width": 720,
+    "height": 720,
+    "length": 72,
+    "batch_size": 1,
+    "shift": 8.0,
+    "cfg": 1.0,
+    "sampler_name": "lcm",
+    "scheduler": "beta",
+    "steps": 4,
+    "seed": 201,
+    "fps": 24,
+    "job_id": "input-001-white-stable-3sec"
+  }
+}

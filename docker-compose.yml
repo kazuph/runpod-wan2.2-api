@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  wan2-i2v:
+    build: .
+    container_name: wan2-i2v-local
+    command: ["python", "worker_runpod.py", "--rp_serve_api", "--rp_api_host=0.0.0.0", "--rp_api_port=8080"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./input:/content/ComfyUI/input:ro
+      - ./output:/content/ComfyUI/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Default parameters (can be overridden with environment variables)
+      - INPUT_IMAGE=${INPUT_IMAGE:-https://s3.tost.ai/input/a2784ea5-0d9b-41e0-8eb2-69be58261074.png}
+      - POSITIVE_PROMPT=${POSITIVE_PROMPT:-A beautiful scene with dynamic movement}
+      - NEGATIVE_PROMPT=${NEGATIVE_PROMPT:-static, blurry, low quality}
+      - WIDTH=${WIDTH:-720}
+      - HEIGHT=${HEIGHT:-480}
+      - STEPS=${STEPS:-4}
+      - SEED=${SEED:-42}
+      - FPS=${FPS:-24}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
