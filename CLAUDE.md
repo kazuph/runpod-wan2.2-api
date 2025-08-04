@@ -249,3 +249,23 @@ docker compose run --rm wan2-i2v python generate_video.py
 - [ ] Sequential generation for multiple videos
 
 This knowledge base should be updated as new insights are discovered through continued experimentation with the WAN2.2 model.
+
+## Development Guidelines
+
+### Docker Command Execution
+- **All build and inference Docker commands must be run via `ghost run`**
+- This ensures proper background execution and process management
+- Example: `ghost run -- docker compose build` instead of `docker compose build`
+
+### FLF (First-Last Frame) Operations
+- **Always execute FLF commands from the `flf/` directory**: `cd flf && ghost run -- [command]`
+- **Output is automatically saved to `flf/output/`** via Docker volume mounting
+- **Use WanFirstLastFrameToVideo node** for 2-image transitions
+- **FLF requires both start_image and end_image parameters**
+
+### Code Architecture Principles
+- **Never create temporary files for inference operations**
+- **All functionality must be implemented in permanent code files**
+- **Parameter changes should handle all variations without new file creation**
+- **Avoid one-off scripts - build reusable components with parameter support**
+- This ensures operational scalability and maintenance efficiency

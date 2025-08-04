@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  wan2-i2v-flf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wan2-i2v-flf-local
+    command: ["python", "worker_runpod.py", "--rp_serve_api", "--rp_api_host=0.0.0.0", "--rp_api_port=8080"]
+    ports:
+      - "8081:8080"
+    volumes:
+      - ../input:/content/ComfyUI/input:ro
+      - ./output:/content/ComfyUI/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Default parameters for FLF (First-Last Frame) processing
+      - START_IMAGE=${START_IMAGE:-start.jpg}
+      - END_IMAGE=${END_IMAGE:-end.jpg}
+      - POSITIVE_PROMPT=${POSITIVE_PROMPT:-smooth transition animation between frames}
+      - NEGATIVE_PROMPT=${NEGATIVE_PROMPT:-static, blurry, low quality, mouth opening, talking}
+      - WIDTH=${WIDTH:-720}
+      - HEIGHT=${HEIGHT:-1280}
+      - STEPS=${STEPS:-4}
+      - SEED=${SEED:-42}
+      - FPS=${FPS:-24}
+      - LENGTH=${LENGTH:-81}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
