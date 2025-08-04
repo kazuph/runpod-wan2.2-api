@@ -172,19 +172,18 @@ Generate videos with command line parameters instead of editing JSON files:
    docker compose up -d
    ```
 
-2. **Generate with custom parameters**:
+2. **Generate with command line arguments** (Recommended):
    ```bash
-   # Use a local image
+   # Use command line arguments - most convenient
    docker compose exec wan2-i2v python generate_video.py \
-     -e INPUT_IMAGE=my_image.jpg \
-     -e POSITIVE_PROMPT="A serene lake with gentle ripples" \
-     -e WIDTH=720 \
-     -e HEIGHT=480 \
-     -e STEPS=4 \
-     -e SEED=123
+     -i my_image.jpg \
+     -p "A serene lake with gentle ripples" \
+     -n "static, blurry, low quality" \
+     -w 720 --height 480 \
+     -s 4 --seed 123
    ```
 
-3. **Or set environment variables**:
+3. **Or use environment variables**:
    ```bash
    INPUT_IMAGE=my_image.jpg \
    POSITIVE_PROMPT="Beautiful mountain landscape with flowing water" \
@@ -193,6 +192,17 @@ Generate videos with command line parameters instead of editing JSON files:
    STEPS=6 \
    SEED=42 \
    docker compose exec wan2-i2v python generate_video.py
+   ```
+
+4. **Mix both approaches** (CLI args override env vars):
+   ```bash
+   # Set defaults with env vars, override specific values with CLI
+   export POSITIVE_PROMPT="Default beautiful scene"
+   export WIDTH=720
+   export HEIGHT=720
+   docker compose exec wan2-i2v python generate_video.py \
+     -i my_special_image.jpg \
+     --seed 456
    ```
 
 ### Using Local Images
@@ -236,6 +246,25 @@ The `INPUT_IMAGE` parameter supports:
 ### Testing with Different Parameters
 
 Edit `test_input.json` or create custom configuration files:
+
+### Command Line Arguments
+
+```bash
+python generate_video.py -h  # Show all options
+
+# Most commonly used arguments:
+-i, --input-image     Input image path or URL
+-p, --positive-prompt Text describing desired video content
+-n, --negative-prompt Text describing undesired content
+-w, --width          Video width (default: 720)
+--height             Video height (default: 480)
+-l, --length         Video length in frames (default: 53)
+-s, --steps          Inference steps (default: 4)
+--seed               Random seed for reproducibility
+--fps                Frames per second (default: 24)
+```
+
+### JSON API (Alternative)
 
 ```json
 {

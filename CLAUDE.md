@@ -155,6 +155,28 @@ SEED=101
 
 ### Sample Configurations
 
+### Command Line Arguments (Recommended)
+
+**Static Portrait (3 seconds):**
+```bash
+docker compose run --rm wan2-i2v python generate_video.py \
+  -i "input_001_white.png" \
+  -p "Close-up portrait with serene expression, closed lips, direct eye contact with camera, natural lighting, minimal movement, static pose, calm demeanor" \
+  -n "mouth opening, lip movement, talking, speaking, facial animation, lip sync, dialogue, conversation" \
+  -w 720 --height 720 -l 72
+```
+
+**Fireworks Celebration (5 seconds):**
+```bash
+docker compose run --rm wan2-i2v python generate_video.py \
+  -i "image_005_black.png" \
+  -p "Beautiful fireworks exploding in night sky above children, colorful fireworks bursting and sparkling, magical firework display, bright colorful explosions" \
+  -n "mouth opening, talking, speaking, facial animation, daytime, bright lighting, no fireworks, static sky" \
+  -w 576 --height 576 -l 120
+```
+
+### Environment Variables (Alternative)
+
 **Static Portrait (3 seconds):**
 ```bash
 export INPUT_IMAGE="input_001_white.png"

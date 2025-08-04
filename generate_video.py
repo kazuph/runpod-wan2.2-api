@@ -1,32 +1,54 @@
 #!/usr/bin/env python3
 """
-Generate video using environment variables instead of JSON file.
-This script reads parameters from environment variables and calls the worker directly.
+Generate video using command line arguments or environment variables.
+This script reads parameters from CLI args (priority) or environment variables and calls the worker directly.
 """
 import os
 import json
+import argparse
 from worker_runpod import generate
 
 def main():
-    # Read parameters from environment variables
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Generate video using WAN2.2 I2V model")
+    parser.add_argument("-i", "--input-image", help="Input image path or URL")
+    parser.add_argument("-p", "--positive-prompt", help="Positive prompt describing desired content")
+    parser.add_argument("-n", "--negative-prompt", help="Negative prompt describing undesired content")
+    parser.add_argument("--crop", choices=["center", "top", "bottom"], help="Image cropping method")
+    parser.add_argument("-w", "--width", type=int, help="Video width")
+    parser.add_argument("--height", type=int, help="Video height")
+    parser.add_argument("-l", "--length", type=int, help="Video length in frames")
+    parser.add_argument("-s", "--steps", type=int, help="Number of inference steps")
+    parser.add_argument("--seed", type=int, help="Random seed")
+    parser.add_argument("--fps", type=int, help="Frames per second")
+    parser.add_argument("--cfg", type=float, help="CFG guidance scale")
+    parser.add_argument("--shift", type=float, help="Shift parameter")
+    parser.add_argument("--sampler", help="Sampler name")
+    parser.add_argument("--scheduler", help="Scheduler name")
+    parser.add_argument("--batch-size", type=int, help="Batch size")
+    parser.add_argument("--job-id", help="Job ID for tracking")
+    
+    args = parser.parse_args()
+    
+    # Read parameters from CLI args (priority) or environment variables (fallback)
     input_data = {
         "input": {
-            "input_image": os.getenv("INPUT_IMAGE", "https://s3.tost.ai/input/a2784ea5-0d9b-41e0-8eb2-69be58261074.png"),
-            "positive_prompt": os.getenv("POSITIVE_PROMPT", "A beautiful scene with dynamic movement"),
-            "negative_prompt": os.getenv("NEGATIVE_PROMPT", "static, blurry, low quality"),
-            "crop": os.getenv("CROP", "center"),
-            "width": int(os.getenv("WIDTH", "720")),
-            "height": int(os.getenv("HEIGHT", "480")),
-            "length": int(os.getenv("LENGTH", "53")),
-            "batch_size": int(os.getenv("BATCH_SIZE", "1")),
-            "shift": float(os.getenv("SHIFT", "8.0")),
-            "cfg": float(os.getenv("CFG", "1.0")),
-            "sampler_name": os.getenv("SAMPLER_NAME", "lcm"),
-            "scheduler": os.getenv("SCHEDULER", "beta"),
-            "steps": int(os.getenv("STEPS", "4")),
-            "seed": int(os.getenv("SEED", "42")),
-            "fps": int(os.getenv("FPS", "24")),
-            "job_id": os.getenv("JOB_ID", f"env-job-{os.getenv('SEED', '42')}")
+            "input_image": args.input_image or os.getenv("INPUT_IMAGE", "https://s3.tost.ai/input/a2784ea5-0d9b-41e0-8eb2-69be58261074.png"),
+            "positive_prompt": args.positive_prompt or os.getenv("POSITIVE_PROMPT", "A beautiful scene with dynamic movement"),
+            "negative_prompt": args.negative_prompt or os.getenv("NEGATIVE_PROMPT", "static, blurry, low quality"),
+            "crop": args.crop or os.getenv("CROP", "center"),
+            "width": args.width or int(os.getenv("WIDTH", "720")),
+            "height": args.height or int(os.getenv("HEIGHT", "480")),
+            "length": args.length or int(os.getenv("LENGTH", "53")),
+            "batch_size": args.batch_size or int(os.getenv("BATCH_SIZE", "1")),
+            "shift": args.shift or float(os.getenv("SHIFT", "8.0")),
+            "cfg": args.cfg or float(os.getenv("CFG", "1.0")),
+            "sampler_name": args.sampler or os.getenv("SAMPLER_NAME", "lcm"),
+            "scheduler": args.scheduler or os.getenv("SCHEDULER", "beta"),
+            "steps": args.steps or int(os.getenv("STEPS", "4")),
+            "seed": args.seed or int(os.getenv("SEED", "42")),
+            "fps": args.fps or int(os.getenv("FPS", "24")),
+            "job_id": args.job_id or os.getenv("JOB_ID", f"cli-job-{args.seed or os.getenv('SEED', '42')}")
         }
     }
     
