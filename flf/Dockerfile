@@ -30,13 +30,11 @@ RUN pip install torch torchvision torchaudio --extra-index-url https://download.
     pip install opencv-python imageio imageio-ffmpeg ffmpeg-python moviepy timm scikit-image matplotlib diffusers accelerate peft runpod && \
     git clone https://github.com/WASasquatch/was-node-suite-comfyui /content/ComfyUI/custom_nodes/was-node-suite-comfyui && cd /content/ComfyUI/custom_nodes/was-node-suite-comfyui && pip install -r requirements.txt && \
     git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite /content/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite && cd /content/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite && pip install -r requirements.txt && \
-    git clone https://github.com/Fannovel16/ComfyUI-WAN /content/ComfyUI/custom_nodes/ComfyUI-WAN
+    git clone https://github.com/Fannovel16/ComfyUI-WAN /content/ComfyUI/custom_nodes/ComfyUI-WAN || echo "ComfyUI-WAN clone failed, continuing..."
 
-# Download FLF-specific models (separated HIGH/LOW models)
-RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Phr00t/WAN2.2-14B-Rapid-AllInOne/resolve/main/Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors -d /content/ComfyUI/models/unet -o Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors && \
-    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Phr00t/WAN2.2-14B-Rapid-AllInOne/resolve/main/Wan2_2-I2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors -d /content/ComfyUI/models/unet -o Wan2_2-I2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors && \
-    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Phr00t/WAN2.2-14B-Rapid-AllInOne/resolve/main/umt5_xxl_fp8_e4m3fn_scaled.safetensors -d /content/ComfyUI/models/clip -o umt5_xxl_fp8_e4m3fn_scaled.safetensors && \
-    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Phr00t/WAN2.2-14B-Rapid-AllInOne/resolve/main/Wan2_1_VAE_bf16.safetensors -d /content/ComfyUI/models/vae -o Wan2_1_VAE_bf16.safetensors && \
+# Download FLF-specific model (WAN2.1-FLF2V-14B-720P)
+RUN pip install "huggingface_hub[cli]" && \
+    huggingface-cli download Wan-AI/Wan2.1-FLF2V-14B-720P --local-dir /content/ComfyUI/models/checkpoints/Wan2.1-FLF2V-14B-720P && \
     aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lllyasviel/misc/resolve/main/clip_vision_vit_h.safetensors -d /content/ComfyUI/models/clip_vision -o clip_vision_vit_h.safetensors
 
 # Copy FLF-specific application files

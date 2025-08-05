@@ -2,6 +2,9 @@ import os, json, requests, random, time, cv2, ffmpeg, runpod
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from urllib.parse import urlsplit
 
+import sys
+sys.path.append('/content/ComfyUI')
+
 import torch
 import numpy as np
 
@@ -21,11 +24,10 @@ VAEDecode = NODE_CLASS_MAPPINGS["VAEDecode"]()
 
 # Load FLF models
 with torch.inference_mode():
-    # Load separate HIGH and LOW models for FLF processing
-    unet_high = UNETLoader.load_unet("Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors", "fp8_e4m3fn")[0]
-    unet_low = UNETLoader.load_unet("Wan2_2-I2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors", "fp8_e4m3fn")[0]
-    clip = CLIPLoader.load_clip("umt5_xxl_fp8_e4m3fn_scaled.safetensors", "wan", "default")[0]
-    vae = VAELoader.load_vae("Wan2_1_VAE_bf16.safetensors")[0]
+    # Load FLF model for First-Last Frame processing - using actual downloaded file names
+    unet = UNETLoader.load_unet("Wan2.1-FLF2V-14B-720P/diffusion_pytorch_model.safetensors", "default")[0]
+    clip = CLIPLoader.load_clip("Wan2.1-FLF2V-14B-720P/models_clip_open-clip-xlm-roberta-large-vit-huge-14.pth", "sd1", "default")[0]
+    vae = VAELoader.load_vae("Wan2.1-FLF2V-14B-720P/Wan2.1_VAE.pth")[0]
 
 def get_input_image_path(input_image):
     """
@@ -114,9 +116,8 @@ def generate(input):
             seed = random.randint(0, 18446744073709551615)
         fps = values.get('fps', 24)
 
-        # Apply model sampling to both HIGH and LOW models
-        model_high = ModelSamplingSD3.patch(unet_high, shift)[0]
-        model_low = ModelSamplingSD3.patch(unet_low, shift)[0]
+        # Apply model sampling to FLF model
+        model = ModelSamplingSD3.patch(unet, shift)[0]
         
         # Encode prompts
         positive = CLIPTextEncode.encode(clip, positive_prompt)[0]
@@ -132,19 +133,11 @@ def generate(input):
             start_image=start_img, end_image=end_img
         )
         
-        # Two-stage sampling: HIGH model (0-10 steps), then LOW model (10-10000 steps)
-        # First stage: HIGH noise model
+        # Single-stage sampling with FLF model
         out_samples = KSamplerAdvanced.sample(
-            model_high, seed, 20, cfg, "euler", "simple", 
-            positive, negative, out_latent, 
-            add_noise="enable", noise_seed=seed, start_at_step=0, end_at_step=10, return_with_leftover_noise="enable"
-        )[0]
-        
-        # Second stage: LOW noise model
-        out_samples = KSamplerAdvanced.sample(
-            model_low, 0, 20, cfg, "euler", "simple",
-            positive, negative, out_samples,
-            add_noise="disable", noise_seed=0, start_at_step=10, end_at_step=10000, return_with_leftover_noise="disable"
+            model, seed, 20, cfg, "euler", "simple",
+            positive, negative, out_latent,
+            add_noise="enable", noise_seed=seed, start_at_step=0, end_at_step=20, return_with_leftover_noise="disable"
         )[0]
 
         decoded_images = VAEDecode.decode(vae, out_samples)[0].detach()
