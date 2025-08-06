@@ -12,6 +12,7 @@ services:
     volumes:
       - ../input:/content/ComfyUI/input:ro
       - ./output:/content/ComfyUI/output
+      - /home/kazuph/.cache/huggingface:/home/camenduru/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
       # Default parameters for FLF (First-Last Frame) processing

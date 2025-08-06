@@ -1,16 +1,47 @@
-# Output files
+# Claude Code
+.claude/
+
+# Output files (media)
 output/
 *.mp4
 *.mov
+*.avi
+*.webm
+*.mkv
+*.gif
 
-# Input downloads
-input/
+# Model files (very large - DO NOT COMMIT)
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.h5
+*.onnx
+*.pb
+
+# ComfyUI models directories
+models/
+checkpoints/
+vae/
+text_encoders/
+diffusion_models/
+clip_vision/
 
 # Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+wheels/
+*.manifest
+*.spec
 
 # Virtual environments
 venv/
@@ -18,13 +49,17 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv/
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
 *~
+.project
+.pydevproject
 
 # OS generated files
 .DS_Store
@@ -34,10 +69,41 @@ venv.bak/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
+logs/
+error.txt
 
 # Temporary files
 temp_*.png
 *.tmp
+.temp/
+tmp/
+
+# Docker volumes (when mounted locally)
+docker_models/
+docker_output/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Test files
+test_*.json
+test_input.json
+
+# Hugging Face cache
+.cache/
+huggingface/
+
+# Workflow test images
+workflows/**/*.jpeg
+workflows/**/*.jpg
+workflows/**/*.png
+
+# Keep only essential markdown docs
+!README.md
+!CLAUDE.md
+!flux-comfyui-architecture-concept.md

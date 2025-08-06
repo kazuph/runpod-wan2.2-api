@@ -87,28 +87,31 @@ def images_to_mp4(images, output_path, fps=24):
 
 @torch.inference_mode()
 def generate(input):
+    # Start timing the entire generation process
+    start_time = time.time()
+    
     try:
         values = input["input"]
 
         input_image = values['input_image']
         input_image_path = get_input_image_path(input_image)
-        positive_prompt = values['positive_prompt'] # Fashion magazine, dynamic blur, hand-held lens, a close-up photo, the scene of a group of 21-year-old goths at a warehouse party, with a movie-like texture, super-realistic effect, realism.
-        negative_prompt = values['negative_prompt'] # 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走
-        crop = values['crop'] # center
-        width = values['width'] # 1280
-        height = values['height'] # 530
-        length = values['length'] # 53
-        batch_size = values['batch_size'] # 1
-        shift = values['shift'] # 8.0
-        cfg = values['cfg'] # 1.0
-        sampler_name = values['sampler_name'] # lcm
-        scheduler = values['scheduler'] # beta
-        steps = values['steps'] # 4
-        seed = values['seed'] # 0
+        positive_prompt = values['positive_prompt']
+        negative_prompt = values['negative_prompt']
+        crop = values['crop']
+        width = values['width']
+        height = values['height']
+        length = values['length']
+        batch_size = values['batch_size']
+        shift = values['shift']
+        cfg = values['cfg']
+        sampler_name = values['sampler_name']
+        scheduler = values['scheduler']
+        steps = values['steps']
+        seed = values['seed']
         if seed == 0:
             random.seed(int(time.time()))
             seed = random.randint(0, 18446744073709551615)
-        fps = values['fps'] # 24
+        fps = values['fps']
 
         model = ModelSamplingSD3.patch(unet, shift)[0]
         positive = CLIPTextEncode.encode(clip, positive_prompt)[0]
@@ -128,11 +131,26 @@ def generate(input):
         
         job_id = values.get('job_id', f'local-job-{seed}')
         
-        # Return local file path instead of upload URL
-        return {"jobId": job_id, "result": result, "status": "DONE", "message": "Video saved locally"}
+        # Calculate execution time
+        execution_time = round(time.time() - start_time, 2)
+        
+        # Return local file path instead of upload URL with execution time
+        return {
+            "jobId": job_id,
+            "result": result,
+            "status": "DONE",
+            "message": "Video saved locally",
+            "execution_time": execution_time
+        }
     except Exception as e:
         job_id = values.get('job_id', 'unknown-job') if 'values' in locals() else 'unknown-job'
         print(f"Error in generate: {str(e)}")
-        return {"jobId": job_id, "result": f"FAILED: {str(e)}", "status": "FAILED"}
+        execution_time = round(time.time() - start_time, 2)
+        return {
+            "jobId": job_id,
+            "result": f"FAILED: {str(e)}",
+            "status": "FAILED",
+            "execution_time": execution_time
+        }
 
 runpod.serverless.start({"handler": generate})

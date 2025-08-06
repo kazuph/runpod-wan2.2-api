@@ -72,7 +72,8 @@ This repository provides a RunPod-compatible API wrapper for the [Wan2.2](https:
   "jobId": "job-12345",
   "result": "/path/to/output/video.mp4",
   "status": "DONE",
-  "message": "Video saved locally"
+  "message": "Video saved locally",
+  "execution_time": 88.36
 }
 ```
 
@@ -129,8 +130,12 @@ curl -X GET "https://api.runpod.ai/v2/YOUR_ENDPOINT_ID/status/JOB_ID" \
    docker compose up --build
    ```
 
-3. **Test the API**:
+3. **Test with the CLI tool**:
    ```bash
+   # Using the host CLI tool (recommended)
+   ./cli.py -i input.jpg -p "A beautiful scene" -w 576 --height 576
+   
+   # Or test the API directly with curl
    curl -X POST http://localhost:8080/run \
      -H "Content-Type: application/json" \
      -d @test_input.json
@@ -163,46 +168,37 @@ curl -X GET "https://api.runpod.ai/v2/YOUR_ENDPOINT_ID/status/JOB_ID" \
      wan2.2-i2v-local python worker_runpod.py --rp_serve_api --rp_api_host=0.0.0.0
    ```
 
-### Using Environment Variables (Recommended)
+### Using the Host CLI Tool (Recommended)
 
-Generate videos with command line parameters instead of editing JSON files:
+The CLI tool runs on your host machine and sends requests to the Docker API server:
 
-1. **Start the service**:
+1. **Start the API servers**:
    ```bash
    docker compose up -d
    ```
 
-2. **Generate with command line arguments** (Recommended):
+2. **Generate videos using the CLI**:
    ```bash
-   # Use command line arguments - most convenient
-   docker compose exec wan2-i2v python generate_video.py \
-     -i my_image.jpg \
-     -p "A serene lake with gentle ripples" \
-     -n "static, blurry, low quality" \
-     -w 720 --height 480 \
-     -s 4 --seed 123
+   # Auto-detect resolution (maintains aspect ratio, default behavior)
+   ./cli.py -i girl1.jpg -p "Gentle portrait with soft movement" -n "mouth opening, talking"
+   
+   # Manual resolution specification
+   ./cli.py -i input.jpg -p "Beautiful flowing water" -w 720 --height 480 --no-auto-resize
+   
+   # Using synchronous mode (wait for completion)
+   ./cli.py --sync -i landscape.jpg -p "Serene landscape with wind"
+   
+   # With environment variables
+   INPUT_IMAGE=my_image.jpg POSITIVE_PROMPT="Dynamic scene" ./cli.py
    ```
 
-3. **Or use environment variables**:
+3. **FLF (First-Last Frame) generation**:
    ```bash
-   INPUT_IMAGE=my_image.jpg \
-   POSITIVE_PROMPT="Beautiful mountain landscape with flowing water" \
-   WIDTH=1024 \
-   HEIGHT=576 \
-   STEPS=6 \
-   SEED=42 \
-   docker compose exec wan2-i2v python generate_video.py
-   ```
-
-4. **Mix both approaches** (CLI args override env vars):
-   ```bash
-   # Set defaults with env vars, override specific values with CLI
-   export POSITIVE_PROMPT="Default beautiful scene"
-   export WIDTH=720
-   export HEIGHT=720
-   docker compose exec wan2-i2v python generate_video.py \
-     -i my_special_image.jpg \
-     --seed 456
+   # Basic FLF generation (uses port 8081)
+   ./flf/cli.py -i start.jpg -e end.jpg -p "Smooth transition between frames" -w 576 --height 576 -l 81
+   
+   # With custom API URL
+   ./flf/cli.py --api-url http://localhost:8081 -i girl1.jpg -e girl2.jpg
    ```
 
 ### Using Local Images
@@ -216,8 +212,11 @@ You can use local images instead of URLs. Place your images in the `input/` dire
 
 2. **Generate with local image**:
    ```bash
+   # Make sure the API server is running
    docker compose up -d
-   INPUT_IMAGE=your_image.jpg docker compose exec wan2-i2v python generate_video.py
+   
+   # Use the CLI tool
+   ./cli.py -i input/your_image.jpg -p "Your prompt here"
    ```
 
 ### Available Environment Variables
@@ -247,10 +246,10 @@ The `INPUT_IMAGE` parameter supports:
 
 Edit `test_input.json` or create custom configuration files:
 
-### Command Line Arguments
+### CLI Tool Arguments
 
 ```bash
-python generate_video.py -h  # Show all options
+./cli.py -h  # Show all options
 
 # Most commonly used arguments:
 -i, --input-image     Input image path or URL
@@ -262,21 +261,47 @@ python generate_video.py -h  # Show all options
 -s, --steps          Inference steps (default: 4)
 --seed               Random seed for reproducibility
 --fps                Frames per second (default: 24)
+--sync               Use synchronous API (wait for completion)
+--api-url            Custom API server URL (default: http://localhost:8080)
+--auto-resize        Auto-detect image dimensions and maintain aspect ratio (default: True)
+--no-auto-resize     Disable automatic resolution detection
+
+# FLF-specific arguments:
+-i, --start-image    Start image for transition
+-e, --end-image      End image for transition
+
+# Resolution Auto-Detection:
+The CLI automatically detects input image dimensions and scales them to fit within
+VRAM limits while preserving aspect ratio. This avoids unwanted square videos.
+- Horizontal images (wide): Max 720x480
+- Vertical images (tall): Max 480x720  
+- Square-ish images: Max 576x576
 ```
 
-### JSON API (Alternative)
+### Direct API Usage (Alternative)
 
-```json
-{
-  "input": {
-    "input_image": "https://your-image-url.jpg",
-    "positive_prompt": "Your custom prompt",
-    "width": 720,
-    "height": 480,
-    "steps": 4,
-    "seed": 42
-  }
-}
+If you prefer to use the API directly:
+
+```bash
+# Asynchronous request
+curl -X POST http://localhost:8080/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "input_image": "girl1.jpg",
+      "positive_prompt": "Beautiful scene",
+      "negative_prompt": "static, blurry",
+      "crop": "center",
+      "width": 576,
+      "height": 576,
+      "length": 72,
+      "steps": 4,
+      "seed": 42
+    }
+  }'
+
+# Check status
+curl http://localhost:8080/status/{job_id}
 ```
 
 ## Performance Notes

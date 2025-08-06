@@ -28,23 +28,10 @@ RUN pip install torch torchvision torchaudio --extra-index-url https://download.
     pip install xformers --extra-index-url https://download.pytorch.org/whl/cu128 && \
     git clone --depth 1 --branch master https://github.com/comfyanonymous/ComfyUI /content/ComfyUI && cd /content/ComfyUI && pip install -r requirements.txt && \
     pip install opencv-python imageio imageio-ffmpeg ffmpeg-python moviepy timm scikit-image matplotlib diffusers accelerate peft runpod && \
-    git clone https://github.com/WASasquatch/was-node-suite-comfyui /content/ComfyUI/custom_nodes/was-node-suite-comfyui && cd /content/ComfyUI/custom_nodes/was-node-suite-comfyui && pip install -r requirements.txt && \
-    git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite /content/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite && cd /content/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite && pip install -r requirements.txt && \
-    git clone https://github.com/Fannovel16/ComfyUI-WAN /content/ComfyUI/custom_nodes/ComfyUI-WAN || echo "ComfyUI-WAN clone failed, continuing..."
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors -d /content/ComfyUI/models/diffusion_models -o wan2.2_ti2v_5B_fp16.safetensors && \
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors -d /content/ComfyUI/models/text_encoders -o umt5_xxl_fp8_e4m3fn_scaled.safetensors && \
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors -d /content/ComfyUI/models/vae -o wan2.2_vae.safetensors
 
-# Download FLF-specific model (WAN2.1-FLF2V-14B-720P)
-RUN pip install "huggingface_hub[cli]" && \
-    huggingface-cli download Wan-AI/Wan2.1-FLF2V-14B-720P --local-dir /content/ComfyUI/models/checkpoints/Wan2.1-FLF2V-14B-720P && \
-    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lllyasviel/misc/resolve/main/clip_vision_vit_h.safetensors -d /content/ComfyUI/models/clip_vision -o clip_vision_vit_h.safetensors
-
-# Copy FLF-specific application files
-COPY worker_runpod.py /content/worker_runpod.py
-COPY schema.json /content/schema.json
-COPY entrypoint.sh /content/entrypoint.sh
-
-# Make entrypoint executable
-RUN chmod +x /content/entrypoint.sh
-
-# Set entrypoint and default command
-ENTRYPOINT ["/content/entrypoint.sh"]
-CMD ["worker_runpod.py"]
+COPY ./worker_runpod.py /content/ComfyUI/worker_runpod.py
+WORKDIR /content/ComfyUI
+CMD ["python", "worker_runpod.py"]

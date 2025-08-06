@@ -1,0 +1,71 @@
+# Output files
+output/
+*.mp4
+*.avi
+*.mov
+*.webm
+*.mkv
+
+# Input test files (keep only examples)
+input/*.jpg
+input/*.jpeg
+input/*.png
+!input/girl1.jpg
+!input/girl2.jpg
+!input/test_image.jpg
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+wheels/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Model files (large)
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+model.json
+
+# Temporary files
+*.tmp
+.temp/
+tmp/
+
+# Test files
+test_input.json
+
+# Workflow images
+workflows/*.jpeg
+workflows/*.jpg
+workflows/*.png
+
+# Docker volumes
+models/
+checkpoints/

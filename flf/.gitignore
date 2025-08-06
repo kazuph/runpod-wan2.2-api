@@ -1,0 +1,59 @@
+# Output files
+output/
+*.mp4
+*.avi
+*.mov
+*.webm
+*.mkv
+
+# Model files (large)
+models/
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+wheels/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+.temp/
+tmp/
+
+# Test files
+*_test.py
+worker_runpod_test.py/
+
+# Docker volumes
+checkpoints/

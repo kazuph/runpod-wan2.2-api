@@ -24,8 +24,8 @@ VAEDecode = NODE_CLASS_MAPPINGS["VAEDecode"]()
 
 # Load FLF models
 with torch.inference_mode():
-    # Load FLF model for First-Last Frame processing - using actual downloaded file names
-    unet = UNETLoader.load_unet("Wan2.1-FLF2V-14B-720P/diffusion_pytorch_model.safetensors", "default")[0]
+    # Load FLF model for First-Last Frame processing
+    unet = UNETLoader.load_unet("Wan2.1-FLF2V-14B-720P", "default")[0]
     clip = CLIPLoader.load_clip("Wan2.1-FLF2V-14B-720P/models_clip_open-clip-xlm-roberta-large-vit-huge-14.pth", "sd1", "default")[0]
     vae = VAELoader.load_vae("Wan2.1-FLF2V-14B-720P/Wan2.1_VAE.pth")[0]
 
@@ -93,6 +93,9 @@ def images_to_mp4(images, output_path, fps=24):
 
 @torch.inference_mode()
 def generate(input):
+    # Start timing the entire generation process
+    start_time = time.time()
+    
     try:
         values = input["input"]
 
@@ -149,11 +152,26 @@ def generate(input):
         
         job_id = values.get('job_id', f'flf-job-{seed}')
         
-        # Return local file path
-        return {"jobId": job_id, "result": result, "status": "DONE", "message": "FLF video saved locally"}
+        # Calculate execution time
+        execution_time = round(time.time() - start_time, 2)
+        
+        # Return local file path with execution time
+        return {
+            "jobId": job_id,
+            "result": result,
+            "status": "DONE",
+            "message": "FLF video saved locally",
+            "execution_time": execution_time
+        }
     except Exception as e:
         job_id = values.get('job_id', 'unknown-flf-job') if 'values' in locals() else 'unknown-flf-job'
         print(f"Error in FLF generate: {str(e)}")
-        return {"jobId": job_id, "result": f"FAILED: {str(e)}", "status": "FAILED"}
+        execution_time = round(time.time() - start_time, 2)
+        return {
+            "jobId": job_id,
+            "result": f"FAILED: {str(e)}",
+            "status": "FAILED",
+            "execution_time": execution_time
+        }
 
 runpod.serverless.start({"handler": generate})

@@ -32,6 +32,5 @@ RUN pip install torch torchvision torchaudio --extra-index-url https://download.
     aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lllyasviel/misc/resolve/main/clip_vision_vit_h.safetensors -d /content/ComfyUI/models/clip_vision -o clip_vision_vit_h.safetensors
 
 COPY ./worker_runpod.py /content/ComfyUI/worker_runpod.py
-COPY ./generate_video.py /content/ComfyUI/generate_video.py
 WORKDIR /content/ComfyUI
 CMD ["python", "worker_runpod.py"]

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  wan2-t2i:
+    build: .
+    container_name: wan2-t2i-local
+    command: ["python", "worker_runpod.py", "--rp_serve_api", "--rp_api_host=0.0.0.0", "--rp_api_port=8083"]
+    ports:
+      - "8083:8083"
+    volumes:
+      - ../input:/content/ComfyUI/input:ro
+      - ./output:/content/ComfyUI/output
+      # 重要: ホームディレクトリのキャッシュをマウントして、既存のダウンロードを活用
+      - /home/kazuph/.cache/huggingface:/home/camenduru/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Default parameters for T2I generation
+      - POSITIVE_PROMPT=${POSITIVE_PROMPT:-A beautiful landscape}
+      - NEGATIVE_PROMPT=${NEGATIVE_PROMPT:-blurry, low quality}
+      - WIDTH=${WIDTH:-576}
+      - HEIGHT=${HEIGHT:-576}
+      - LENGTH=${LENGTH:-1}  # 1 frame for static image
+      - STEPS=${STEPS:-20}
+      - CFG=${CFG:-7.0}
+      - SEED=${SEED:-42}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped

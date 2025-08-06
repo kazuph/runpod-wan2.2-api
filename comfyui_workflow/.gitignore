@@ -1,0 +1,76 @@
+# Model files (extremely large)
+models/
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.spiece.model
+
+# ComfyUI specific
+comfyui_workflow/models/
+diffusion_pytorch_model*.safetensors
+
+# Output files
+output/
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Input test files
+input/**/*.jpg
+input/**/*.jpeg
+input/**/*.png
+!input/girl1.jpg
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+wheels/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+.temp/
+tmp/
+
+# Test workflow files
+test_*.json
+
+# Docker volumes
+checkpoints/
+text_encoders/
+vae/
+diffusion_models/
+clip_vision/
+
+# Hugging Face cache
+.cache/
+huggingface/

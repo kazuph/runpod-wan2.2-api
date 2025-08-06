@@ -1,0 +1,57 @@
+# Output files
+output/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+wheels/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Model files (large)
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+
+# Temporary files
+*.tmp
+.temp/
+tmp/
+
+# Docker volumes
+models/
+checkpoints/
+
+# Debug files
+*_debug.py

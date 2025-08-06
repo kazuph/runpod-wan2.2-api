@@ -76,10 +76,15 @@ if img.mode in ('RGBA', 'LA'):
     white_bg.paste(img, (0, 0), img)
 ```
 
-### Aspect Ratio Preservation
-- Input image aspect ratio should match output video dimensions
-- Use `crop: "center"` for automatic cropping
-- Consider content placement when choosing dimensions
+### Aspect Ratio Preservation (Auto-Detection)
+- **CLI tools automatically detect input image dimensions and preserve aspect ratio**
+- **Square videos (576x576) are avoided unless the input is square**
+- Resolution is automatically scaled to fit within VRAM limits:
+  - Horizontal/wide images → max 720x480
+  - Vertical/tall images → max 480x720
+  - Square-ish images → max 576x576
+- Use `--no-auto-resize` to disable auto-detection
+- Manual resolution can be specified with `-w` and `--height`
 
 ## Prompt Engineering
 
@@ -124,25 +129,35 @@ WAN2.2 has a tendency to generate unwanted mouth/lip movement. Combat this with:
 
 ### Docker Setup
 ```bash
-# Build image
-docker build -t wan2.2-i2v-local .
+# Start API servers with Docker Compose
+docker compose up -d
 
-# Run with GPU support
-docker run --rm --gpus all \
-  -v "$(pwd)/input:/content/ComfyUI/input" \
-  -v "$(pwd)/output:/content/ComfyUI/output" \
-  wan2.2-i2v-local
+# Check running containers
+docker ps | grep wan2
+
+# View logs
+docker compose logs -f wan2-i2v
 ```
 
-### API Usage
+### CLI Usage (Recommended)
 ```bash
-# Local server endpoint
-curl -X POST http://localhost:8080/runsync \
-  -H 'Content-Type: application/json' \
-  -d '{"input": {...}}'
+# Auto-detect resolution from input image (maintains aspect ratio)
+./cli.py -i input.jpg -p "Your prompt" -n "negative prompt"
+
+# Manual resolution (disables auto-detection)
+./cli.py -i input.jpg -p "Your prompt" -w 576 --height 576 --no-auto-resize
+
+# For FLF generation (port 8081) - auto-detects from start image
+./flf/cli.py -i start.jpg -e end.jpg -p "transition prompt"
+
+# Synchronous mode (wait for completion)
+./cli.py --sync -i input.jpg -p "Beautiful scene"
 ```
 
 ### Environment Variables
+
+The CLI tools support environment variables as fallbacks:
+
 ```bash
 INPUT_IMAGE=input_001.png
 POSITIVE_PROMPT="Beautiful scene with gentle movement"
@@ -151,6 +166,9 @@ WIDTH=720
 HEIGHT=720
 LENGTH=72
 SEED=101
+
+# Run with environment variables
+./cli.py  # Will use the environment variables
 ```
 
 ### Sample Configurations
@@ -159,7 +177,7 @@ SEED=101
 
 **Static Portrait (3 seconds):**
 ```bash
-docker compose run --rm wan2-i2v python generate_video.py \
+./cli.py \
   -i "input_001_white.png" \
   -p "Close-up portrait with serene expression, closed lips, direct eye contact with camera, natural lighting, minimal movement, static pose, calm demeanor" \
   -n "mouth opening, lip movement, talking, speaking, facial animation, lip sync, dialogue, conversation" \
@@ -168,7 +186,7 @@ docker compose run --rm wan2-i2v python generate_video.py \
 
 **Fireworks Celebration (5 seconds):**
 ```bash
-docker compose run --rm wan2-i2v python generate_video.py \
+./cli.py \
   -i "image_005_black.png" \
   -p "Beautiful fireworks exploding in night sky above children, colorful fireworks bursting and sparkling, magical firework display, bright colorful explosions" \
   -n "mouth opening, talking, speaking, facial animation, daytime, bright lighting, no fireworks, static sky" \
@@ -185,7 +203,7 @@ export NEGATIVE_PROMPT="mouth opening, lip movement, talking, speaking, facial a
 export WIDTH=720
 export HEIGHT=720
 export LENGTH=72
-docker compose run --rm wan2-i2v python generate_video.py
+./cli.py
 ```
 
 **Fireworks Celebration (5 seconds):**
@@ -196,7 +214,7 @@ export NEGATIVE_PROMPT="mouth opening, talking, speaking, facial animation, dayt
 export WIDTH=576
 export HEIGHT=576
 export LENGTH=120
-docker compose run --rm wan2-i2v python generate_video.py
+./cli.py
 ```
 
 ## Common Issues & Solutions
@@ -241,7 +259,8 @@ docker compose run --rm wan2-i2v python generate_video.py
 
 - [ ] Input image analyzed using Read tool to understand content
 - [ ] Input image has solid background (not transparent)
-- [ ] Resolution chosen based on GPU memory constraints
+- [ ] Let CLI auto-detect resolution to preserve aspect ratio (avoid square videos)
+- [ ] Only specify manual resolution if specific size needed
 - [ ] Prompt includes specific action description
 - [ ] Negative prompt includes mouth/speech prevention
 - [ ] Duration set appropriately (72-120 frames typical)
@@ -251,6 +270,82 @@ docker compose run --rm wan2-i2v python generate_video.py
 This knowledge base should be updated as new insights are discovered through continued experimentation with the WAN2.2 model.
 
 ## Development Guidelines
+
+### ⚠️ CRITICAL DOCKER RULES - MUST READ ⚠️
+
+#### 🚫 ABSOLUTELY FORBIDDEN ACTIONS 🚫
+
+1. **NEVER USE `docker run` COMMAND**
+   - **THIS IS STRICTLY PROHIBITED!** This project REQUIRES GPU access
+   - **ALWAYS use `docker compose` commands ONLY**
+   - The docker-compose.yml is configured with proper GPU settings
+   - Using `docker run` will FAIL because it lacks GPU configuration
+
+2. **NEVER DELETE DOCKER IMAGES OR BUILD WITHOUT CACHE**
+   - **DO NOT remove Docker images** - They contain critical build cache
+   - **DO NOT run `docker image prune` or `docker system prune -a`**
+   - **DO NOT use `--no-cache` flag when building**
+   - **DO NOT use `docker rmi` to remove images**
+   - Build times can exceed **1 HOUR** - image layers are CRITICAL
+   - **Past incidents have wasted DAYS due to image cache loss**
+   - Note: Containers can be removed safely, but NEVER remove images
+
+#### ✅ MANDATORY GPU CONFIGURATION
+
+All Docker operations MUST include GPU support:
+```yaml
+# Required in docker-compose.yml
+deploy:
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: all
+          capabilities: [gpu]
+```
+
+#### ✅ CORRECT USAGE
+
+**ALWAYS use docker compose commands:**
+```bash
+# Start services (CORRECT)
+docker compose up -d
+
+# View logs (CORRECT)
+docker compose logs -f
+
+# Rebuild with cache (CORRECT)
+docker compose build
+
+# Stop services without removing (CORRECT)
+docker compose stop
+```
+
+**NEVER use these commands:**
+```bash
+# ❌ FORBIDDEN - No GPU access
+docker run [any arguments]
+
+# ❌ FORBIDDEN - Destroys build cache
+docker compose build --no-cache
+
+# ❌ FORBIDDEN - Removes images
+docker rmi [any image]
+docker image prune
+
+# ❌ FORBIDDEN - Cleans images and build cache
+docker system prune -a
+```
+
+**Safe to use:**
+```bash
+# ✅ OK - Remove containers only (keeps images)
+docker compose down
+docker container prune
+
+# ✅ OK - Remove volumes if needed
+docker volume prune
+```
 
 ### Docker Command Execution
 - **All build and inference Docker commands must be run via `ghost run`**
@@ -269,3 +364,9 @@ This knowledge base should be updated as new insights are discovered through con
 - **Parameter changes should handle all variations without new file creation**
 - **Avoid one-off scripts - build reusable components with parameter support**
 - This ensures operational scalability and maintenance efficiency
+
+### RunPod Serverless Deployment
+- **All projects must ultimately run on RunPod Serverless platform**
+- **Local testing must be configured using Docker Compose environment**
+- **Reference**: Follow the RunPod local testing guide at https://docs.runpod.io/serverless/development/local-testing
+- **Important**: Ensure your Docker Compose setup matches RunPod's serverless requirements for proper local testing and seamless deployment

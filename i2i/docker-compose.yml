@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  wan2-i2i:
+    build: .
+    container_name: wan2-i2i-local
+    command: ["python", "worker_runpod.py", "--rp_serve_api", "--rp_api_host=0.0.0.0", "--rp_api_port=8082"]
+    ports:
+      - "8082:8082"
+    volumes:
+      - ../input:/content/ComfyUI/input:ro
+      - ./output:/content/ComfyUI/output
+      - /home/kazuph/.cache/huggingface:/home/camenduru/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Default parameters for i2i generation
+      - INPUT_IMAGE=${INPUT_IMAGE:-../input/input_001_white.png}
+      - POSITIVE_PROMPT=${POSITIVE_PROMPT:-A beautiful artistic rendition}
+      - NEGATIVE_PROMPT=${NEGATIVE_PROMPT:-blurry, low quality}
+      - WIDTH=${WIDTH:-576}
+      - HEIGHT=${HEIGHT:-576}
+      - STEPS=${STEPS:-4}
+      - SEED=${SEED:-42}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped

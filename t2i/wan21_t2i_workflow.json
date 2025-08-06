@@ -1,0 +1,156 @@
+{
+  "6": {
+    "inputs": {
+      "text_encoder": [
+        "24",
+        0
+      ],
+      "text": "1girl"
+    },
+    "class_type": "WanVideoTextEncode",
+    "_meta": {
+      "title": "WanVideo Text Encode"
+    }
+  },
+  "8": {
+    "inputs": {
+      "text_encoder": [
+        "24",
+        0
+      ],
+      "text": "",
+      "force_offload": true
+    },
+    "class_type": "WanVideoTextEncode",
+    "_meta": {
+      "title": "WanVideo Text Encode"
+    }
+  },
+  "10": {
+    "inputs": {
+      "diffusion_model": [
+        "39",
+        0
+      ],
+      "positive_cond": [
+        "40",
+        0
+      ],
+      "negative_cond": [
+        "8",
+        0
+      ],
+      "video_length": 1,
+      "height": 1024,
+      "width": 576,
+      "base_resolution": 512,
+      "seed": 636227853299509,
+      "steps": 20,
+      "cfg": 7,
+      "cfg_start_percent": 0,
+      "cfg_end_percent": 1,
+      "noise_type": "repeat_sequence",
+      "mixed_precision": true,
+      "optimize_vae_decode": false,
+      "sampler": "dpmpp_2m_sde"
+    },
+    "class_type": "WanVideoSampler",
+    "_meta": {
+      "title": "WanVideo Sampler"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "12": {
+    "inputs": {
+      "vae": [
+        "13",
+        0
+      ],
+      "samples": [
+        "10",
+        0
+      ],
+      "seamless_tile": false
+    },
+    "class_type": "WanVideoDecode",
+    "_meta": {
+      "title": "WanVideo Decode"
+    }
+  },
+  "13": {
+    "inputs": {
+      "vae": "Wan2_1_VAE_bf16.safetensors",
+      "precision": "bf16"
+    },
+    "class_type": "WanVideoModelLoader",
+    "_meta": {
+      "title": "WanVideo Model Loader"
+    }
+  },
+  "24": {
+    "inputs": {
+      "text_encoder": "umt5-xxl-enc-bf16.safetensors",
+      "precision": "fp16"
+    },
+    "class_type": "LoadWanVideoT5TextEncoder",
+    "_meta": {
+      "title": "Load WanVideo T5 Text Encoder"
+    }
+  },
+  "39": {
+    "inputs": {
+      "diffusion_model": "Wan2_1-T2V-14B_fp8_e4m3fn.safetensors",
+      "precision": "fp8_e4m3fn",
+      "attention_mode": "sageattn"
+    },
+    "class_type": "WanVideoModelLoader",
+    "_meta": {
+      "title": "WanVideo Model Loader"
+    }
+  },
+  "40": {
+    "inputs": {
+      "text_encoder": [
+        "24",
+        0
+      ],
+      "positive_cond": [
+        "6",
+        0
+      ],
+      "vace_module": [
+        "42",
+        0
+      ],
+      "vace_ratio": 0.5,
+      "force_offload": true
+    },
+    "class_type": "WanVideoVACEEncode",
+    "_meta": {
+      "title": "WanVideo VACE Encode"
+    }
+  },
+  "42": {
+    "inputs": {
+      "diffusion_model": "Wan2_1-VACE_module_14B_fp8_e4m3fn.safetensors",
+      "precision": "fp8_e4m3fn",
+      "attention_mode": "sageattn"
+    },
+    "class_type": "WanVideoModelLoader",
+    "_meta": {
+      "title": "WanVideo Model Loader"
+    }
+  }
+}

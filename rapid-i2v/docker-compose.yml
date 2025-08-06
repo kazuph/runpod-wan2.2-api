@@ -10,6 +10,7 @@ services:
     volumes:
       - ./input:/content/ComfyUI/input:ro
       - ./output:/content/ComfyUI/output
+      - /home/kazuph/.cache/huggingface:/home/camenduru/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
       # Default parameters (can be overridden with environment variables)

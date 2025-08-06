@@ -1,0 +1,29 @@
+
+services:
+  comfyui-wan22:
+    image: runpod-wan22-api-wan2-i2v
+    container_name: comfyui-wan22-test
+    ports:
+      - "8188:8188"
+    volumes:
+      - ~/.cache:/root/.cache
+      - ./models:/content/ComfyUI/models
+      - ./workflows:/content/ComfyUI/workflows  
+      - ./input:/content/ComfyUI/input
+      - ./output:/content/ComfyUI/output
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - COMFYUI_HOST=0.0.0.0
+      - COMFYUI_PORT=8188
+    command: ["python", "/content/ComfyUI/main.py", "--listen", "--port", "8188"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
