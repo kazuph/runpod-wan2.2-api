@@ -1,0 +1,156 @@
+# ComfyUI WAN2.2 GGUF - Optimized Multi-stage Build
+# Reverse engineered from nykk3/comfyui-wan2.2-gguf:q4ks-14b-i2v-cuda12.8
+
+#############################
+# Stage 1: Base dependencies
+#############################
+FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=$CUDA_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+
+# Install system dependencies in one layer
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-dev python3-venv \
+    git wget curl unzip \
+    ffmpeg libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    libgomp1 libgoogle-perftools4 libtcmalloc-minimal4 \
+    build-essential pkg-config \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+#############################
+# Stage 2: Python environment
+#############################
+FROM base AS python-env
+
+WORKDIR /app
+
+# Install PyTorch first (largest dependency)
+RUN pip3 install --no-cache-dir \
+    torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+# Install core ML/AI dependencies
+RUN pip3 install --no-cache-dir \
+    xformers accelerate transformers diffusers \
+    numpy scipy scikit-image opencv-python pillow \
+    matplotlib imageio imageio-ffmpeg psutil kornia spandrel \
+    soundfile GitPython einops omegaconf safetensors \
+    huggingface-hub timm controlnet-aux \
+    moviepy av decord gguf
+
+#############################
+# Stage 3: ComfyUI installation
+#############################
+FROM python-env AS comfyui
+
+# Clone ComfyUI
+RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git /app/ComfyUI
+
+WORKDIR /app/ComfyUI
+
+# Install ComfyUI requirements
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Create model directories
+RUN mkdir -p models/{checkpoints,vae,clip,controlnet,diffusers,unet,wan2.2,diffusion_models,text_encoders}
+
+# Install essential custom nodes
+RUN cd custom_nodes && \
+    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager.git || true && \
+    git clone --depth 1 https://github.com/kijai/ComfyUI-KwaiKolorsWrapper.git || true && \
+    git clone --depth 1 https://github.com/kijai/ComfyUI-VideoCrafter.git || true && \
+    git clone --depth 1 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git || true && \
+    git clone --depth 1 https://github.com/Fannovel16/comfyui_controlnet_aux.git || true && \
+    git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git || true
+
+#############################
+# Stage 4: Model downloader
+#############################
+FROM comfyui AS models
+
+WORKDIR /app/ComfyUI/models/wan2.2
+
+# Download WAN2.2 models (use ARG for flexibility)
+ARG DOWNLOAD_MODELS=true
+ARG MODEL_BASE_URL=https://huggingface.co/kwaikeg/WAN2.2-14B-I2V/resolve/main
+
+# Skip GGUF models due to authentication requirements - handle them separately
+RUN echo "Note: GGUF models require authentication and should be downloaded separately"
+
+#############################
+# Stage 5: Final runtime image
+#############################
+FROM models AS final
+
+# Set CUDA memory optimization
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+ENV CUDA_LAUNCH_BLOCKING=0
+
+# Create non-root user for security
+RUN groupadd -r comfyui && useradd -r -g comfyui comfyui
+RUN chown -R comfyui:comfyui /app
+
+# Create optimized startup script
+RUN echo '#!/bin/bash\n\
+echo "Starting ComfyUI WAN2.2 GGUF..."\n\
+echo "CUDA Version: $(nvcc --version | grep release)"\n\
+echo "GPU Info: $(nvidia-smi --query-gpu=name --format=csv,noheader,nounits)"\n\
+echo "Available GPU Memory: $(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits) MB"\n\
+\n\
+# Check if models exist\n\
+if [ ! -f "/app/ComfyUI/models/wan2.2/wan2.2-14b-i2v-q4ks.gguf" ]; then\n\
+    echo "WARNING: WAN2.2 GGUF model not found. Please download manually or rebuild with DOWNLOAD_MODELS=true"\n\
+fi\n\
+\n\
+cd /app/ComfyUI\n\
+exec python3 main.py \\\n\
+    --listen 0.0.0.0 \\\n\
+    --port 8188 \\\n\
+    --cuda-device 0 \\\n\
+    --enable-cors-header \\\n\
+    --extra-model-paths-config extra_model_paths.yaml\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Create extra model paths config
+RUN echo 'wan2.2:\n\
+    base_path: /app/ComfyUI/models/wan2.2/\n\
+    checkpoints: /app/ComfyUI/models/wan2.2/\n\
+    gguf: /app/ComfyUI/models/wan2.2/\n\
+' > /app/ComfyUI/extra_model_paths.yaml
+
+# Download WAN2.1 VAE (319MB) - Added before final WORKDIR to preserve cache
+RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/vae/wan_2.1_vae.safetensors \
+    "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors" || \
+    echo "VAE download failed - please download manually"
+
+# Download WAN2.2 diffusion models - Added before final WORKDIR to preserve cache
+RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors \
+    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors" || \
+    echo "High noise model download failed - please download manually"
+
+RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors \
+    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors" || \
+    echo "Low noise model download failed - please download manually"
+
+# Download text encoder - Added before final WORKDIR to preserve cache  
+RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors \
+    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" || \
+    echo "Text encoder download failed - please download manually"
+
+WORKDIR /app/ComfyUI
+
+EXPOSE 8188
+
+# Health check with proper timeout
+HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8188/ || exit 1
+
+# Use non-root user
+USER comfyui
+
+CMD ["/app/start.sh"]

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  comfyui-wan22-gguf:
+    build: 
+      context: .
+      dockerfile: Dockerfile.optimized
+      args:
+        - DOWNLOAD_MODELS=true  # Set to false to skip model downloads
+    image: comfyui-wan22-gguf:latest
+    container_name: comfyui-wan22-gguf
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./models:/app/ComfyUI/models/wan2.2  # Optional: mount local models
+      - ./output:/app/ComfyUI/output
+      - ./input:/app/ComfyUI/input  
+      - ./custom_workflows:/app/ComfyUI/custom_workflows  # Optional: mount workflows
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+
+  # Optional: Build without model downloads (faster build)
+  comfyui-wan22-gguf-slim:
+    build: 
+      context: .
+      dockerfile: Dockerfile.optimized  
+      args:
+        - DOWNLOAD_MODELS=false
+    image: comfyui-wan22-gguf:slim
+    container_name: comfyui-wan22-gguf-slim
+    ports:
+      - "8189:8188"
+    volumes:
+      - ./models:/app/ComfyUI/models/wan2.2  # Must provide models externally
+      - ./output:/app/ComfyUI/output
+      - ./input:/app/ComfyUI/input
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    profiles: ["slim"]  # Only starts with --profile slim
