@@ -22,12 +22,17 @@ KSamplerAdvanced = NODE_CLASS_MAPPINGS["KSamplerAdvanced"]()
 ModelSamplingSD3 = nodes_model_advanced.NODE_CLASS_MAPPINGS["ModelSamplingSD3"]()
 VAEDecode = NODE_CLASS_MAPPINGS["VAEDecode"]()
 
-# Load FLF models
+# Load FLF models - Using official WAN2.2 models
 with torch.inference_mode():
-    # Load FLF model for First-Last Frame processing
-    unet = UNETLoader.load_unet("Wan2.1-FLF2V-14B-720P", "default")[0]
-    clip = CLIPLoader.load_clip("Wan2.1-FLF2V-14B-720P/models_clip_open-clip-xlm-roberta-large-vit-huge-14.pth", "sd1", "default")[0]
-    vae = VAELoader.load_vae("Wan2.1-FLF2V-14B-720P/Wan2.1_VAE.pth")[0]
+    # Load high and low noise models for dual-stage sampling
+    unet_high = UNETLoader.load_unet("wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors", "default")[0]
+    unet_low = UNETLoader.load_unet("wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors", "default")[0]
+    
+    # Load CLIP text encoder
+    clip = CLIPLoader.load_clip("umt5_xxl_fp8_e4m3fn_scaled.safetensors", "wan", "default")[0]
+    
+    # Load VAE
+    vae = VAELoader.load_vae("wan_2.1_vae.safetensors")[0]
 
 def get_input_image_path(input_image):
     """
@@ -119,8 +124,9 @@ def generate(input):
             seed = random.randint(0, 18446744073709551615)
         fps = values.get('fps', 24)
 
-        # Apply model sampling to FLF model
-        model = ModelSamplingSD3.patch(unet, shift)[0]
+        # Apply model sampling to both high and low noise models
+        model_high = ModelSamplingSD3.patch(unet_high, shift)[0]
+        model_low = ModelSamplingSD3.patch(unet_low, shift)[0]
         
         # Encode prompts
         positive = CLIPTextEncode.encode(clip, positive_prompt)[0]
@@ -136,11 +142,18 @@ def generate(input):
             start_image=start_img, end_image=end_img
         )
         
-        # Single-stage sampling with FLF model
-        out_samples = KSamplerAdvanced.sample(
-            model, seed, 20, cfg, "euler", "simple",
+        # Dual-stage sampling: First with high noise model (steps 0-10)
+        intermediate_samples = KSamplerAdvanced.sample(
+            model_high, seed, 20, cfg, "euler", "simple",
             positive, negative, out_latent,
-            add_noise="enable", noise_seed=seed, start_at_step=0, end_at_step=20, return_with_leftover_noise="disable"
+            add_noise="enable", noise_seed=seed, start_at_step=0, end_at_step=10, return_with_leftover_noise="enable"
+        )[0]
+        
+        # Second stage with low noise model (steps 10-20)
+        out_samples = KSamplerAdvanced.sample(
+            model_low, seed, 20, cfg, "euler", "simple",
+            positive, negative, intermediate_samples,
+            add_noise="disable", noise_seed=seed, start_at_step=10, end_at_step=10000, return_with_leftover_noise="disable"
         )[0]
 
         decoded_images = VAEDecode.decode(vae, out_samples)[0].detach()

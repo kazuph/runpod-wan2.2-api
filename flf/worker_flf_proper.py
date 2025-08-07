@@ -122,16 +122,8 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
         # FLF workflow with GGUF quantized model
         workflow = {
             "1": {
-                "inputs": {"unet_name": "unet_gguf/wan2.1-flf2v-14b-720p-Q3_K_M.gguf"},
-                "class_type": "UnetLoaderGGUF"
-            },
-            "1b": {
-                "inputs": {"vae_name": "wan2.2_vae.safetensors"},
-                "class_type": "VAELoader"
-            },
-            "1c": {
-                "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan"},
-                "class_type": "CLIPLoader"
+                "inputs": {"ckpt_name": "wan2.1-flf.safetensors"},
+                "class_type": "CheckpointLoaderSimple"
             },
             "2": {
                 "inputs": {"image": start_upload["name"], "upload": "image"},
@@ -142,18 +134,18 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                 "class_type": "LoadImage"
             },
             "4": {
-                "inputs": {"text": positive_prompt, "clip": ["1c", 0]},
+                "inputs": {"text": positive_prompt, "clip": ["1", 1]},
                 "class_type": "CLIPTextEncode"  
             },
             "5": {
-                "inputs": {"text": negative_prompt, "clip": ["1c", 0]},
+                "inputs": {"text": negative_prompt, "clip": ["1", 1]},
                 "class_type": "CLIPTextEncode"
             },
             "6": {
                 "inputs": {
                     "positive": ["4", 0],
                     "negative": ["5", 0], 
-                    "vae": ["1b", 0],
+                    "vae": ["1", 2],
                     "start_image": ["2", 0],
                     "end_image": ["3", 0],
                     "width": width,
@@ -179,7 +171,7 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                 "class_type": "KSampler"
             },
             "8": {
-                "inputs": {"samples": ["7", 0], "vae": ["1b", 0]},
+                "inputs": {"samples": ["7", 0], "vae": ["1", 2]},
                 "class_type": "VAEDecode"
             }
         }

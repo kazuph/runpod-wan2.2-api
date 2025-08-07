@@ -1,0 +1,145 @@
+{
+  "37": {
+    "inputs": {
+      "unet_name": "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "56": {
+    "inputs": {
+      "unet_name": "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "38": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "39": {
+    "inputs": {
+      "vae_name": "wan2.2_vae.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "68": {
+    "inputs": {
+      "image": "start.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "62": {
+    "inputs": {
+      "image": "end.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "6": {
+    "inputs": {
+      "text": "smooth transformation between images",
+      "clip": ["38", 0]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "static, abrupt changes, morphing artifacts",
+      "clip": ["38", 0]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "54": {
+    "inputs": {
+      "shift": 8.0,
+      "model": ["37", 0]
+    },
+    "class_type": "ModelSamplingSD3"
+  },
+  "55": {
+    "inputs": {
+      "shift": 8.0,
+      "model": ["56", 0]
+    },
+    "class_type": "ModelSamplingSD3"
+  },
+  "67": {
+    "inputs": {
+      "width": 640,
+      "height": 640,
+      "length": 81,
+      "batch_size": 1,
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "vae": ["39", 0],
+      "start_image": ["68", 0],
+      "end_image": ["62", 0]
+    },
+    "class_type": "WanFirstLastFrameToVideo"
+  },
+  "57": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 42,
+      "steps": 20,
+      "cfg": 4.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": 10,
+      "return_with_leftover_noise": "enable",
+      "model": ["54", 0],
+      "positive": ["67", 0],
+      "negative": ["67", 1],
+      "latent_image": ["67", 2]
+    },
+    "class_type": "KSamplerAdvanced"
+  },
+  "58": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 42,
+      "steps": 20,
+      "cfg": 4.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 10,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": ["55", 0],
+      "positive": ["67", 0],
+      "negative": ["67", 1],
+      "latent_image": ["57", 0]
+    },
+    "class_type": "KSamplerAdvanced"
+  },
+  "8": {
+    "inputs": {
+      "samples": ["58", 0],
+      "vae": ["39", 0]
+    },
+    "class_type": "VAEDecode"
+  },
+  "60": {
+    "inputs": {
+      "frame_rate": 16,
+      "fps": 16,
+      "images": ["8", 0]
+    },
+    "class_type": "CreateVideo"
+  },
+  "61": {
+    "inputs": {
+      "filename_prefix": "wan22_flf",
+      "format": "mp4",
+      "codec": "h264", 
+      "video": ["60", 0]
+    },
+    "class_type": "SaveVideo"
+  }
+}

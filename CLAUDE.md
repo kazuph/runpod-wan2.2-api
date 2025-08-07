@@ -1,5 +1,15 @@
 # WAN2.2 I2V Video Generation - Knowledge Base
 
+****************rapid-i2v禁止**********************
+****************rapid-i2v禁止**********************
+****************rapid-i2v禁止**********************
+****************flf/以下での作業禁止**********************
+****************flf/以下での作業禁止**********************
+****************flf/以下での作業禁止**********************
+****************wan2.1禁止、wan2.2のみ許可*********************
+****************wan2.1禁止、wan2.2のみ許可*********************
+****************wan2.1禁止、wan2.2のみ許可*********************
+
 This document contains key insights and best practices for generating high-quality videos using the WAN2.2 I2V (Image-to-Video) model.
 
 ## Model Information
@@ -289,6 +299,12 @@ This knowledge base should be updated as new insights are discovered through con
    - Build times can exceed **1 HOUR** - image layers are CRITICAL
    - **Past incidents have wasted DAYS due to image cache loss**
    - Note: Containers can be removed safely, but NEVER remove images
+   
+   **今後は以下を厳守します：**
+   - ❌ **docker rmi** - イメージ削除禁止
+   - ❌ **docker image prune** - イメージクリーンアップ禁止
+   - ❌ **--no-cache** - キャッシュなしビルド禁止
+   - ❌ **docker system prune -a** - システム全体のクリーンアップ禁止
 
 #### ✅ MANDATORY GPU CONFIGURATION
 
@@ -306,19 +322,19 @@ deploy:
 
 #### ✅ CORRECT USAGE
 
-**ALWAYS use docker compose commands:**
+**ALWAYS use docker compose commands with ghost run wrapper:**
 ```bash
 # Start services (CORRECT)
-docker compose up -d
+ghost run -- docker compose up -d
 
 # View logs (CORRECT)
-docker compose logs -f
+ghost run -- docker compose logs -f
 
-# Rebuild with cache (CORRECT)
-docker compose build
+# Rebuild with cache (CORRECT - MUST use ghost run)
+ghost run -- docker compose build
 
 # Stop services without removing (CORRECT)
-docker compose stop
+ghost run -- docker compose stop
 ```
 
 **NEVER use these commands:**
@@ -328,9 +344,10 @@ docker run [any arguments]
 
 # ❌ FORBIDDEN - Destroys build cache
 docker compose build --no-cache
+ghost run -- docker compose build --no-cache
 
-# ❌ FORBIDDEN - Removes images
-docker rmi [any image]
+# ❌ FORBIDDEN - Removes images (CRITICAL!)
+docker rmi [any image]  # 絶対禁止！イメージ削除は致命的
 docker image prune
 
 # ❌ FORBIDDEN - Cleans images and build cache
@@ -346,6 +363,36 @@ docker container prune
 # ✅ OK - Remove volumes if needed
 docker volume prune
 ```
+
+### ⚠️ DOCKERFILE MODIFICATION RULES ⚠️
+
+#### 📝 CRITICAL: Dockerfile Edit Guidelines
+
+1. **DOCKER EXEC IS FOR REFERENCE ONLY**
+   - **`docker exec` commands are ONLY for inspecting/checking container state**
+   - **NEVER use `docker exec` to modify files or install packages**
+   - **All changes MUST be made in the Dockerfile itself**
+
+2. **MODIFY ONLY THE BOTTOM OF DOCKERFILE**
+   - **NEVER modify the upper parts of Dockerfile** - They contain critical base layers
+   - **Add new instructions at the BOTTOM, just before the final WORKDIR**
+   - **If new downloads/installations are needed, add them BEFORE the final WORKDIR**
+   - **Dockerfile redundancy is NOT a problem** - Prioritize cache preservation
+
+3. **PRESERVE BUILD CACHE AT ALL COSTS**
+   - **Add new RUN commands as separate layers** - Don't combine with existing ones
+   - **Place new package installations at the end** - Before WORKDIR
+   - **Example structure:**
+     ```dockerfile
+     # ... existing layers (DO NOT TOUCH) ...
+     
+     # New additions go here (before final WORKDIR)
+     RUN pip install new-package
+     RUN apt-get update && apt-get install -y new-tool
+     
+     # Final WORKDIR (keep at the very end)
+     WORKDIR /workspace
+     ```
 
 ### Docker Command Execution
 - **All build and inference Docker commands must be run via `ghost run`**
@@ -370,3 +417,14 @@ docker volume prune
 - **Local testing must be configured using Docker Compose environment**
 - **Reference**: Follow the RunPod local testing guide at https://docs.runpod.io/serverless/development/local-testing
 - **Important**: Ensure your Docker Compose setup matches RunPod's serverless requirements for proper local testing and seamless deployment
+
+
+****************rapid-i2v禁止**********************
+****************rapid-i2v禁止**********************
+****************rapid-i2v禁止**********************
+****************flf/以下での作業禁止**********************
+****************flf/以下での作業禁止**********************
+****************flf/以下での作業禁止**********************
+****************wan2.1禁止、wan2.2のみ許可*********************
+****************wan2.1禁止、wan2.2のみ許可*********************
+****************wan2.1禁止、wan2.2のみ許可*********************

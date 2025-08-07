@@ -125,8 +125,8 @@ RUN echo 'wan2.2:\n\
 
 # Download WAN2.1 VAE (319MB) - Added before final WORKDIR to preserve cache
 RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/vae/wan_2.1_vae.safetensors \
-    "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors" || \
-    echo "VAE download failed - please download manually"
+    "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors" || \
+    echo "WAN2.1 VAE download failed - please download manually"
 
 # Download WAN2.2 diffusion models - Added before final WORKDIR to preserve cache
 RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors \
@@ -142,6 +142,15 @@ RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/text_encoders/u
     "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" || \
     echo "Text encoder download failed - please download manually"
 
+# Fix permissions for input/output directories
+RUN mkdir -p /app/ComfyUI/input /app/ComfyUI/output /app/ComfyUI/temp \
+    && chmod -R 777 /app/ComfyUI/input /app/ComfyUI/output /app/ComfyUI/temp
+
+# Download WAN2.2 VAE (1.4GB) - Added just before final WORKDIR
+RUN wget -c --progress=bar:force:noscroll -O /app/ComfyUI/models/vae/wan2.2_vae.safetensors \
+    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors" || \
+    echo "WAN2.2 VAE download failed - please download manually"
+
 WORKDIR /app/ComfyUI
 
 EXPOSE 8188
@@ -151,6 +160,6 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:8188/ || exit 1
 
 # Use non-root user
-USER comfyui
+# USER comfyui
 
 CMD ["/app/start.sh"]
